@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 extern void runButterflyGame();
 
-/* ===================== °ø¿ë À¯Æ¿ ===================== */
+/* ===================== ê³µìš© ìœ í‹¸ ===================== */
 Point getRandomRectPosition(int w, int h, int size)
 {
     return Point(rand() % (w - size), rand() % (h - size));
@@ -18,7 +18,7 @@ Point getRandomRectPosition(int w, int h, int size)
 
 
 /* =====================================================
-   ===============¾ó±¼ °ÔÀÓ =========================
+   ===============ì–¼êµ´ ê²Œì„ =========================
    ===================================================== */
 
 struct RectBall {
@@ -45,8 +45,8 @@ void transformBall(Mat& img, string& effectName)
 
     switch (mode)
     {
-    case 0: flip(img, img, 1); break; //ÁÂ¿ì´ëÄª
-    case 1: flip(img, img, 0); break; //»óÇÏ´ëÄª
+    case 0: flip(img, img, 1); break; //ì¢Œìš°ëŒ€ì¹­
+    case 1: flip(img, img, 0); break; //ìƒí•˜ëŒ€ì¹­
     case 2: cv::GaussianBlur(img, img, Size(1, 1), 0); break;
     case 3:
         morphologyEx(img, img, MORPH_CLOSE,
@@ -66,7 +66,7 @@ void transformBall(Mat& img, string& effectName)
     }
     case 5:
     {
-        // »ö ¹İÀü (Negative)
+        // ìƒ‰ ë°˜ì „ (Negative)
         cv::bitwise_not(img, img);
         break;
     }
@@ -90,7 +90,7 @@ void runFaceGame()
 
     Mat captured, prevGray;
 
-    // 1´Ü°è: ¾ó±¼ Ä¸Ã³ ·çÇÁ
+    // 1ë‹¨ê³„: ì–¼êµ´ ìº¡ì²˜ ë£¨í”„
     while (true)
     {
         Mat frame;
@@ -105,16 +105,16 @@ void runFaceGame()
         cv::imshow("FACE GAME", frame);
 
         int key = waitKey(10);
-        if (key == ' ') { // ½ºÆäÀÌ½º¹Ù¸¦ ´©¸£¸é Ä¸Ã³
+        if (key == ' ') { // ìŠ¤í˜ì´ìŠ¤ë°”ë¥¼ ëˆ„ë¥´ë©´ ìº¡ì²˜
             captured = frame(guide).clone();
-            cv::resize(captured, ball.image, Size(80, 80)); //Å©±â ¹Ì¸® Á¶Àı
+            cv::resize(captured, ball.image, Size(80, 80)); //í¬ê¸° ë¯¸ë¦¬ ì¡°ì ˆ
             break;
         }
         else if (key == 27) return;
     }
-    destroyAllWindows();//Ã¢ ´İ±â
+    destroyAllWindows();//ì°½ ë‹«ê¸°
 
-    // 2´Ü°è: ½ÇÁ¦ °ÔÀÓ ·çÇÁ
+    // 2ë‹¨ê³„: ì‹¤ì œ ê²Œì„ ë£¨í”„
     while (true)
     {
         Mat frame, gray, diff, thresh;
@@ -131,7 +131,7 @@ void runFaceGame()
             threshold(diff, thresh, 25, 255, THRESH_BINARY);
 
             Rect r(ball.pos.x, ball.pos.y, ball.size, ball.size);
-            // °æ°è°ª °Ë»ç (¿µ¿ªÀÌ ÇÁ·¹ÀÓÀ» ¹ş¾î³ªÁö ¾Ê°Ô)
+            // ê²½ê³„ê°’ ê²€ì‚¬ (ì˜ì—­ì´ í”„ë ˆì„ì„ ë²—ì–´ë‚˜ì§€ ì•Šê²Œ)
             r &= Rect(0, 0, w, h);
 
             if (!thresh.empty() && countNonZero(thresh(r)) > r.area() * 0.1)
@@ -144,7 +144,7 @@ void runFaceGame()
         }
         gray.copyTo(prevGray);
 
-        // Ãâ·ÂÇÒ ¶§¸¸ ¸®»çÀÌÁîÇØ¼­ º¹»ç (¿øº» º¸Á¸)
+        // ì¶œë ¥í•  ë•Œë§Œ ë¦¬ì‚¬ì´ì¦ˆí•´ì„œ ë³µì‚¬ (ì›ë³¸ ë³´ì¡´)
         Rect r(ball.pos.x, ball.pos.y, ball.size, ball.size);
         r &= Rect(0, 0, w, h);
 
@@ -176,7 +176,7 @@ void runFaceGame()
 }
 
 /* =====================================================
-   ===============¸ğµå ¼±ÅÃ =========================
+   ===============ëª¨ë“œ ì„ íƒ =========================
    ===================================================== */
 
 int selectMode()
