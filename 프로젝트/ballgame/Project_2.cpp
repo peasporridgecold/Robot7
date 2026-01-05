@@ -23,7 +23,7 @@ int loadHighScore() {
     return high;
 }
 
-// ÃÖ°í ±â·Ï ÀúÀåÇÏ±â ÇÔ¼ö
+// ìµœê³  ê¸°ë¡ ì €ì¥í•˜ê¸° í•¨ìˆ˜
 void saveHighScore(int score) {
     int high = loadHighScore();
     if (score > high) {
@@ -38,7 +38,7 @@ void saveHighScore(int score) {
 struct Ball
 {
     cv::Point position; //x, y
-    int radius; //¹İÁö¸§
+    int radius; //ë°˜ì§€ë¦„
 
     Ball()
     {
@@ -52,29 +52,29 @@ cv::Point getRandomCirclePosition(int width, int height, int radius)
     int y = rand() % (height - 2 * radius) + radius;
     return cv::Point(x, y);
 }
-// ballImg: ³Ö°í ½ÍÀº »çÁø, frame: À¥Ä· È­¸é, center: °øÀÇ Áß½É, radius: ¹İÁö¸§
+// ballImg: ë„£ê³  ì‹¶ì€ ì‚¬ì§„, frame: ì›¹ìº  í™”ë©´, center: ê³µì˜ ì¤‘ì‹¬, radius: ë°˜ì§€ë¦„
 void drawBallImage(cv::Mat& frame, cv::Mat& ballImg, cv::Point center, int radius) {
     if (ballImg.empty()) return;
 
-    // 1. °ø Å©±â¿¡ ¸Â°Ô ÀÌ¹ÌÁö ¸®»çÀÌÁî (2*radius x 2*radius)
+    // 1. ê³µ í¬ê¸°ì— ë§ê²Œ ì´ë¯¸ì§€ ë¦¬ì‚¬ì´ì¦ˆ (2*radius x 2*radius)
     cv::Mat resizedBall;
     cv::resize(ballImg, resizedBall, cv::Size(radius * 2, radius * 2));
 
-    // 2. ÇÕ¼ºÇÒ ¿µ¿ª(ROI) ¼³Á¤
+    // 2. í•©ì„±í•  ì˜ì—­(ROI) ì„¤ì •
     int x1 = center.x - radius;
     int y1 = center.y - radius;
 
-    // È­¸é ¹ÛÀ¸·Î ³ª°¡´Â °æ¿ì ¿¹¿Ü Ã³¸®
+    // í™”ë©´ ë°–ìœ¼ë¡œ ë‚˜ê°€ëŠ” ê²½ìš° ì˜ˆì™¸ ì²˜ë¦¬
     if (x1 < 0 || y1 < 0 || x1 + radius * 2 > frame.cols || y1 + radius * 2 > frame.rows) return;
 
     cv::Rect roiRect(x1, y1, radius * 2, radius * 2);
     cv::Mat roi = frame(roiRect);
 
-    // 3. ¿øÇü ¸¶½ºÅ© »ı¼º (°ËÀº ¹ÙÅÁ¿¡ Èò ¿ø)
+    // 3. ì›í˜• ë§ˆìŠ¤í¬ ìƒì„± (ê²€ì€ ë°”íƒ•ì— í° ì›)
     cv::Mat mask = cv::Mat::zeros(resizedBall.size(), CV_8UC1);
     cv::circle(mask, cv::Point(radius, radius), radius, cv::Scalar(255), -1);
 
-    // 4. ¸¶½ºÅ©¸¦ ÀÌ¿ëÇÏ¿© ÇÕ¼º (copyTo »ç¿ë)
+    // 4. ë§ˆìŠ¤í¬ë¥¼ ì´ìš©í•˜ì—¬ í•©ì„± (copyTo ì‚¬ìš©)
     resizedBall.copyTo(roi, mask);
 }
 void drawMorphingBall(cv::Mat& frame, const std::vector<cv::Mat>& images, int idx, float a, cv::Point center, int radius) {
@@ -84,10 +84,10 @@ void drawMorphingBall(cv::Mat& frame, const std::vector<cv::Mat>& images, int id
     cv::resize(images[idx], img1, cv::Size(radius * 2, radius * 2));
     cv::resize(images[nextIdx], img2, cv::Size(radius * 2, radius * 2));
 
-    // µÎ ÀÌ¹ÌÁö¸¦ alpha ºñÀ²·Î ÇÕ¼º (¸ğÇÎÀÇ ÇÙ½É)
+    // ë‘ ì´ë¯¸ì§€ë¥¼ alpha ë¹„ìœ¨ë¡œ í•©ì„± (ëª¨í•‘ì˜ í•µì‹¬)
     cv::addWeighted(img1, 1.0 - a, img2, a, 0, blended);
 
-    // ÀÌÀü ´äº¯ÀÇ ¸¶½ºÅ© ÇÕ¼º ·ÎÁ÷ Àû¿ë
+    // ì´ì „ ë‹µë³€ì˜ ë§ˆìŠ¤í¬ í•©ì„± ë¡œì§ ì ìš©
     cv::Rect roiRect(center.x - radius, center.y - radius, radius * 2, radius * 2);
     if (roiRect.x < 0 || roiRect.y < 0 || roiRect.x + roiRect.width > frame.cols || roiRect.y + roiRect.height > frame.rows) return;
 
@@ -102,7 +102,7 @@ void runButterflyGame ()
     srand((unsigned int)time(0));
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {
-        std::cerr << "À¥Ä·ÀÌ ¾ø½À´Ï´Ù.\n";
+        std::cerr << "ì›¹ìº ì´ ì—†ìŠµë‹ˆë‹¤.\n";
         return;
     }
 
