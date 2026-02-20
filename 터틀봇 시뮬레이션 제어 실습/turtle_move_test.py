@@ -1,16 +1,16 @@
 import sys
 import rclpy
+from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+from std_srvs.srv import Empty
+from geometry_msgs.msg import Twist
+from datetime import datetime  # 시간 출력을 위해 추가
+
 from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QThread, Slot
+
 from turtle_move_ui import Ui_Form
 from move_turtle_pub import Move_turtle
-from geometry_msgs.msg import Twist
-from PySide6.QtCore import QThread, Signal, Slot
-from rclpy.executors import MultiThreadedExecutor
-from std_msgs.msg import String
-import rclpy
-from rclpy.node import Node
-
 
 class RclpyThread(QThread):
     def __init__(self, executor):
@@ -18,92 +18,136 @@ class RclpyThread(QThread):
         self.executor = executor
 
     def run(self):
-        try:
-            self.executor.spin()
-        finally:
-            rclpy.shutdown()
-
+        self.executor.spin()
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super().__init__()
         self.ui = Ui_Form()
-        # setupUi 함수를 호출해 MainWindow에 있는 위젯을 배치한다.
         self.ui.setupUi(self)
-        # button clicked 이벤트 핸들러로 button_clicked 함수와 연결한다.
+
+        # ROS2 초기화
+        if not rclpy.ok():
+            rclpy.init()
+
+        self.executor = MultiThreadedExecutor()
+        self.pub_move = Move_turtle()
+        self.executor.add_node(self.pub_move)
+
+        self.rclpy_thread = RclpyThread(self.executor)
+        self.rclpy_thread.start()
+
+        self.velocity = 0.0
+        self.angular = 0.0
+        self.is_paused = False
+
+        self.pub_move.create_timer(0.1, self.turtle_move)
+
+        # Gazebo 서비스 클라이언트 (이름이 다를 경우 터미널 확인 후 수정 필요)
+        self.reset_client = self.pub_move.create_client(Empty, '/reset_world')
+        self.pause_client = self.pub_move.create_client(Empty, '/pause_physics')
+        self.unpause_client = self.pub_move.create_client(Empty, '/unpause_physics')
+
+        # 버튼 이벤트 연결
         self.ui.btn_go.clicked.connect(self.btn_go_clicked)
         self.ui.btn_back.clicked.connect(self.btn_back_clicked)
         self.ui.btn_right.clicked.connect(self.btn_right_clicked)
         self.ui.btn_left.clicked.connect(self.btn_left_clicked)
         self.ui.btn_stop.clicked.connect(self.btn_stop_clicked)
+        self.ui.btn_reset.clicked.connect(self.btn_reset_clicked)
+        self.ui.btn_pause.clicked.connect(self.btn_pause_clicked)
 
-				#ros 실행
-        rclpy.init()
-        #쓰레드 선언
-        self.executor = MultiThreadedExecutor()
-        self.rclpy_thread = RclpyThread(self.executor)
-        #기존의 cmd_vel 발행하는 클래스 사용
-        self.pub_move = Move_turtle()
+        # 시작 메시지 출력
+        self.add_log("시스템이 시작되었습니다.")
 
-        #현재 클래스에서 timer 함수 재정의 (gui에 출력하기 위해서)
-        self.pub_move.timer = self.pub_move.create_timer(1, self.turtle_move)
+    # ==============================
+    # 로그 출력 함수 (ListWidget)
+    # ==============================
+    def add_log(self, message):
+        current_time = datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{current_time}] {message}"
 
-        #버튼을 눌렀을 때 속도 변화해주기 위해 인스턴스 변수 선언
-        self.velocity = 0.0
-        self.angular = 0.0
-        self.rclpy_thread.start()
+        # UI 업데이트이므로 메인 스레드에서 안전하게 실행
+        self.ui.listWidget.addItem(log_entry)
+        self.ui.listWidget.scrollToBottom()  # 최신 로그로 자동 스크롤
 
-        #만들어진 쓰레드에 노드 publish 노드 추가
-        self.executor.add_node(self.pub_move)
-
-		#timer에서 반복적으로 실행할 함수
+    # ==============================
+    # Topic: cmd_vel publish
+    # ==============================
     def turtle_move(self):
         msg = Twist()
         msg.linear.x = self.velocity
-        msg.linear.y = 0.0
-        msg.linear.z = 0.0
-
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
         msg.angular.z = self.angular
-        #cmd_vel 정의후 발행
         self.pub_move.move_turtle.publish(msg)
-        self.pub_move.get_logger().info(f'Published mesage: {msg.linear}, {msg.angular}')
-        #list에 로그 추가
-        self.ui.listWidget.addItem(f'{msg.linear._x}, {msg.angular._z}')
+
+    # ==============================
+    # 제어 버튼 콜백
+    # ==============================
+    def btn_go_clicked(self):
+        self.velocity += 0.2
+        self.add_log(f"전진: 현재 선속도 {self.velocity:.1f}")
+
+    def btn_back_clicked(self):
+        self.velocity -= 0.2
+        self.add_log(f"후진: 현재 선속도 {self.velocity:.1f}")
+
+    def btn_right_clicked(self):
+        self.angular -= 0.2
+        self.add_log(f"우회전: 현재 각속도 {self.angular:.1f}")
+
+    def btn_left_clicked(self):
+        self.angular += 0.2
+        self.add_log(f"좌회전: 현재 각속도 {self.angular:.1f}")
 
     def btn_stop_clicked(self):
         self.velocity = 0.0
         self.angular = 0.0
+        self.add_log("정지 버튼 클릭 (속도 초기화)")
 
-    def btn_go_clicked(self):
-        self.velocity += 0.2
+    # ==============================
+    # 서비스 호출 관련
+    # ==============================
+    def call_empty_service(self, client, action_name):
+        if not client.wait_for_service(timeout_sec=1.0):
+            self.add_log(f"오류: {action_name} 서비스를 찾을 수 없습니다.")
+            return
 
-    def btn_back_clicked(self):
-        self.velocity -= 0.2
+        req = Empty.Request()
+        future = client.call_async(req)
+        # 람다를 이용해 액션 이름을 콜백에 전달
+        future.add_done_callback(lambda f: self.service_response_callback(f, action_name))
 
-    def btn_right_clicked(self):
-        self.angular -= 0.2
+    def service_response_callback(self, future, action_name):
+        try:
+            future.result()
+            self.add_log(f"성공: {action_name} 완료")
+        except Exception as e:
+            self.add_log(f"실패: {action_name} 도중 오류 발생")
 
-    def btn_left_clicked(self):
-        self.angular += 0.2
+    def btn_reset_clicked(self):
+        self.add_log("월드 초기화 요청 중...")
+        self.call_empty_service(self.reset_client, "리셋")
 
-
-    def ros_executer(self):
-        self.executor.spin()
+    def btn_pause_clicked(self):
+        if not self.is_paused:
+            self.call_empty_service(self.pause_client, "일시정지")
+            self.ui.btn_pause.setText("Resume")
+            self.is_paused = True
+        else:
+            self.call_empty_service(self.unpause_client, "재개")
+            self.ui.btn_pause.setText("Pause")
+            self.is_paused = False
 
     def closeEvent(self, event):
-        # 종료 시 리소스 정리
         self.executor.shutdown()
         self.rclpy_thread.quit()
         self.rclpy_thread.wait()
+        rclpy.shutdown()
         super().closeEvent(event)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
     window = MainWindow()
     window.show()
-
     sys.exit(app.exec())
+
