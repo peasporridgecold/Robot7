@@ -4,7 +4,7 @@ from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from std_srvs.srv import Empty
 from geometry_msgs.msg import Twist
-from datetime import datetime  # 시간 출력을 위해 추가
+from datetime import datetime  # 시간 출력
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import QThread, Slot
@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
 
         self.pub_move.create_timer(0.1, self.turtle_move)
 
-        # Gazebo 서비스 클라이언트 (이름이 다를 경우 터미널 확인 후 수정 필요)
+        # Gazebo 서비스 클라이언트
         self.reset_client = self.pub_move.create_client(Empty, '/reset_world')
         self.pause_client = self.pub_move.create_client(Empty, '/pause_physics')
         self.unpause_client = self.pub_move.create_client(Empty, '/unpause_physics')
@@ -67,7 +67,6 @@ class MainWindow(QMainWindow):
         current_time = datetime.now().strftime("%H:%M:%S")
         log_entry = f"[{current_time}] {message}"
 
-        # UI 업데이트이므로 메인 스레드에서 안전하게 실행
         self.ui.listWidget.addItem(log_entry)
         self.ui.listWidget.scrollToBottom()  # 최신 로그로 자동 스크롤
 
