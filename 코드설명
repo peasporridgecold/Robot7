@@ -1,0 +1,23 @@
+1. 설정 및 데이터 (Project DNA)
+
+    config.py: 알람 시간, 목적지 이름, TTS 문구 등을 관리하는 가장 중요한 설정 파일입니다.
+
+    waypoints.py: 지도의 좌표값(x,y,θ)이 저장된 파일입니다. 이게 없으면 로봇이 어디로 갈지 모릅니다.
+
+    alarm.py: Alarm 클래스 구조가 정의된 파일입니다. (객체 생성을 위해 필요)
+
+2. 실행 노드 (Active Nodes)
+
+    gui_mission_sender.py: 메인 허브입니다. 카메라를 켜서 OCR을 수행하고, 화면에 영상을 띄우며, 제스처 노드에 영상을 쏴주는(Publish) 역할을 합니다.
+
+    alarm_node.py: 시간을 계속 체크하다가 알람 때가 되면 이동 명령을 내리는 감시자입니다.
+
+    integrated_navigator.py: 로봇의 두뇌입니다. Nav2와 통신하여 주행을 제어하고, 도착 시 TTS를 재생하며 제스처 인식을 트리거합니다.
+
+    gesture_recognizer.py: 목적지 도착 후 카메라 영상을 받아 실제 "OK" 동작을 판별합니다.
+
+    player_voice.py: gTTS를 이용해 실제로 말을 하게 만드는 음성 출력 모듈입니다.
+
+3. 유틸리티 (Engines)
+
+    ocr_engine.py: gui_mission_sender 내부에서 실제로 글자를 읽어내는 엔진입니다.
